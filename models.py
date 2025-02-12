@@ -1,5 +1,5 @@
-# models.py
-from app import db  # Import db from app.py
+
+from app import db  
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
