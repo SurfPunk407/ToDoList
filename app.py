@@ -1,49 +1,67 @@
-from flask import Flask, jsonify, request
-from flask_cors import CORS
+# app.py
+import os
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS  # Import CORS
 
 app = Flask(__name__)
-CORS(app)  # Allow cross-origin requests
+CORS(app)  # Enable CORS for all routes
 
-# Sample data for tasks
-tasks = [
-    {"id": 1, "task": "Finish project", "description": "Complete the coding assignment", "status": "incomplete", "date": "2025-02-10"},
-    {"id": 2, "task": "Buy groceries", "description": "Get milk and eggs", "status": "incomplete", "date": "2025-02-11"}
-]
+# Database Configuration (using environment variable)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Recommended
+app.config['CORS_HEADERS'] = 'Content-Type'
 
-# Get all tasks (GET /tasks)
-@app.route('/tasks', methods=['GET'])
-def get_tasks():
-    # Fetch tasks for today or tomorrow
-    date_filter = request.args.get('date')
-    if date_filter:
-        filtered_tasks = [task for task in tasks if task["date"] == date_filter]
-        return jsonify(filtered_tasks)
-    return jsonify(tasks)
+db = SQLAlchemy(app)
 
-# Add a new task (POST /tasks)
-@app.route('/tasks', methods=['POST'])
-def add_task():
-    new_task = request.get_json()
-    new_task["id"] = len(tasks) + 1  # Assign an ID based on the current length
-    tasks.append(new_task)
-    return jsonify(new_task), 201
+# Import Models (after db initialization)
+from models import Task
 
-# Update task (PUT /tasks/<task_id>)
-@app.route('/tasks/<int:task_id>', methods=['PUT'])
-def update_task(task_id):
-    updated_task = request.get_json()
-    for task in tasks:
-        if task['id'] == task_id:
-            task.update(updated_task)
-            return jsonify(task)
-    return jsonify({"message": "Task not found"}), 404
+# API Routes (in app.py)
+from flask import jsonify, request
 
-# Delete a task (DELETE /tasks/<task_id>)
-@app.route('/tasks/<int:task_id>', methods=['DELETE'])
-def delete_task(task_id):
-    global tasks
-    tasks = [task for task in tasks if task['id'] != task_id]
-    return jsonify({"message": "Task deleted successfully"})
+@app.route('/tasks', methods=['GET', 'POST'])
+def tasks():
+    if request.method == 'GET':
+        tasks = Task.query.all()
+        return jsonify([task.to_dictionary() for task in tasks])
+
+    elif request.method == 'POST':
+        data = request.get_json()
+        new_task = Task(
+            task=data['task'],
+            description=data.get('description', ''),
+            priority=data.get('priority', ''),
+            status=data.get('status', True), # Get status, default to True
+            task_date=data.get('task_date', '')
+        )
+        db.session.add(new_task)
+        db.session.commit()
+        return jsonify(new_task.to_dictionary()), 201
+
+@app.route('/tasks/<int:id>', methods=['PUT', 'DELETE'])
+def task(id):
+    task = Task.query.get_or_404(id)
+
+    if request.method == 'PUT':
+        data = request.get_json()
+        task.task = data.get('task', task.task) # Update Task name
+        task.description = data.get('description', task.description)
+        task.priority = data.get('priority', task.priority)
+        task.status = data.get('status', task.status)
+        task.task_date = data.get('task_date', task.task_date)
+
+        db.session.commit()
+        return jsonify(task.to_dictionary())
+
+    elif request.method == 'DELETE':
+        db.session.delete(task)
+        db.session.commit()
+        return '', 204
+
+# Create Tables (run once)
+with app.app_context():
+    db.create_all()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)  # Set debug=False in production!
