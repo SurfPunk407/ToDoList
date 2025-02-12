@@ -9,7 +9,7 @@ class Task(db.Model):
     status = db.Column(db.Boolean, default=True)
     task_date = db.Column(db.String(20), nullable=True)
 
-    def __init__(self, task, description=None, priority=None, status=True, task_date=None):
+    def __init__(self, task, description, priority, status, task_date):
         self.task = task
         self.description = description
         self.priority = priority
