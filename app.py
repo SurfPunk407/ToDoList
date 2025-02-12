@@ -2,10 +2,10 @@
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask_cors import CORS  # Import CORS
+from flask_cors import CORS 
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)  
 
 # Database Configuration (using environment variable)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
@@ -14,10 +14,10 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 
 db = SQLAlchemy(app)
 
-# Import Models (after db initialization)
+
 from models import Task
 
-# API Routes (in app.py)
+
 from flask import jsonify, request
 
 @app.route('/tasks', methods=['GET', 'POST'])
@@ -64,4 +64,4 @@ with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
-    app.run(debug=False)  # Set debug=False in production!
+    app.run(debug=False)  
