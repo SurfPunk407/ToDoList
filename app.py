@@ -41,9 +41,7 @@ def tasks():
             )
             db.session.add(new_task)
             db.session.commit()
-            return jsonify(new_task.to_dictionary()), 201
-        except KeyError as e:
-            return jsonify({'error': f'Missing key in JSON data: {str(e)}'}), 400
+            return jsonify(new_task.to_dictionary()), 201 
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
